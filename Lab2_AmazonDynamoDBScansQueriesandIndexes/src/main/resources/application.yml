@@ -1,0 +1,18 @@
+micronaut:
+  application:
+    name: lab2_AmazonDynamoDBScansQueriesandIndexes
+netty:
+  default:
+    allocator:
+      max-order: 3
+aws:
+  credentials:
+    access-key-id: replaceme
+    secret-key: replaceme
+  endpoint:
+    dynamodb: http://localhost:9000
+dynamodb:
+  table-name: movies
+jackson:
+  serialization:
+    FAIL_ON_EMPTY_BEANS: false
