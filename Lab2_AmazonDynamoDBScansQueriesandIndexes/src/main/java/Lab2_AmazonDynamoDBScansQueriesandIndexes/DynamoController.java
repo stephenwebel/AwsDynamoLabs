@@ -4,13 +4,8 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Post;
-import io.micronaut.http.annotation.QueryValue;
 import jakarta.inject.Inject;
-import java.util.HashMap;
-import java.util.Map;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.UpdateTableResponse;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 
 @Controller("/dynamodb")
 public class DynamoController {
@@ -25,83 +20,16 @@ public class DynamoController {
     return dynamoRepository.removeTable(tableName).toString();
   }
 
-  @Get(value = "/bulkload", produces = MediaType.TEXT_PLAIN)
-  public String bulkLoad(@QueryValue String datafile) {
-    return moviesRepository.bulkLoad(datafile);
-  }
-
-  @Get(value = "/scanMovies", produces = MediaType.APPLICATION_JSON)
-  public Map<String, Integer> scanMovies(Integer year, String genre) {
-    return moviesRepository.moviesScanYG(year, genre);
-  }
-
-  @Get(value = "/moviesQueryWithLsiYG", produces = MediaType.APPLICATION_JSON)
-  public Map<String, Object> queryMoviesWithGenre(Integer year, String genre) {
+  @Get(value = "/table/{tableName}", produces = MediaType.TEXT_PLAIN)
+  public String checkStatus(String tableName) {
     long startTime = System.currentTimeMillis();
-
-    QueryResponse response = moviesRepository.moviesQueryWithLsiYG(year, genre);
+    DescribeTableResponse response = dynamoRepository.checkStatus(tableName);
+    String tableStatus = response.table().tableStatus().toString();
 
     long endTime = System.currentTimeMillis();
-    long duration = endTime - startTime;
+    double totalTime = (endTime - startTime) / 1000.0;
+    return "Status of table is: " + tableStatus + "\n" + "Total time: " + totalTime + " sec";
 
-    Map<String, Object> result = new HashMap<>();
-    result.put("Count", response.count());
-    result.put("ScannedCount", response.scannedCount());
-    result.put("TotalTimeSeconds", duration / 1000.0);
-
-    return result;
   }
 
-  @Get(value = "/moviesQueryYG", produces = MediaType.APPLICATION_JSON)
-  public Map<String, Object> queryMovies(Integer year, String genre) {
-    long startTime = System.currentTimeMillis();
-
-    QueryResponse response = moviesRepository.moviesQueryYG(year, genre);
-
-    long endTime = System.currentTimeMillis();
-    long duration = endTime - startTime;
-
-    Map<String, Object> result = new HashMap<>();
-    result.put("Count", response.count());
-    result.put("ScannedCount", response.scannedCount());
-    result.put("TotalTimeSeconds", duration / 1000.0);
-
-    return result;
-  }
-
-  @Post(value = "/createGSI", produces = MediaType.APPLICATION_JSON)
-  public Map<String, Object> createGSI(
-      @QueryValue String attributeName,
-      @QueryValue String attributeType
-  ) {
-    long startTime = System.currentTimeMillis();
-
-    UpdateTableResponse response = moviesRepository.createGSI(attributeName, attributeType);
-
-    long endTime = System.currentTimeMillis();
-    long duration = endTime - startTime;
-
-    Map<String, Object> result = new HashMap<>();
-    result.put("TableUpdateResponse", response);
-    result.put("TotalTimeSeconds", duration / 1000.0);
-
-    return result;
-  }
-
-  @Get(value = "/queryByGenre", produces = MediaType.APPLICATION_JSON)
-  public Map<String, Object> queryByGenre(String genre) {
-    long startTime = System.currentTimeMillis();
-
-    QueryResponse response = moviesRepository.queryByGenre(genre);
-
-    long endTime = System.currentTimeMillis();
-    long duration = endTime - startTime;
-    Map<String, Object> result = new HashMap<>();
-    result.put("QueryResponse.count", response.count());
-    result.put("QueryResponse.scanned", response.scannedCount());
-    result.put("QueryResponse", response);
-    result.put("TotalTimeSeconds", duration / 1000.0);
-
-    return result;
-  }
 }

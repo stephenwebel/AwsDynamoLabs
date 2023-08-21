@@ -20,15 +20,19 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.CreateGlobalSecondaryIndexAction;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndexUpdate;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 import software.amazon.awssdk.services.dynamodb.model.KeyType;
+import software.amazon.awssdk.services.dynamodb.model.LocalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.Projection;
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateTableRequest;
@@ -43,6 +47,40 @@ public class MoviesRepository {
   @Inject
   public MoviesRepository(DynamoRepository dynamoRepository) {
     this.dynamoDbClient = dynamoRepository.getDynamoDbClient();
+  }
+
+  public CreateTableResponse createTable() {
+    String tableName = "movies";
+    CreateTableRequest request = CreateTableRequest.builder()
+        .tableName(tableName)
+        .keySchema(
+            KeySchemaElement.builder().attributeName("year").keyType(KeyType.HASH).build(),
+            KeySchemaElement.builder().attributeName("title").keyType(KeyType.RANGE).build()
+        )
+        .attributeDefinitions(
+            AttributeDefinition.builder().attributeName("year").attributeType(ScalarAttributeType.N).build(),
+            AttributeDefinition.builder().attributeName("title").attributeType(ScalarAttributeType.S).build(),
+            AttributeDefinition.builder().attributeName("genre").attributeType(ScalarAttributeType.S).build()
+        )
+        .localSecondaryIndexes(
+            LocalSecondaryIndex.builder()
+                .indexName("genre-index")
+                .keySchema(
+                    KeySchemaElement.builder().attributeName("year").keyType(KeyType.HASH).build(),
+                    KeySchemaElement.builder().attributeName("genre").keyType(KeyType.RANGE).build()
+                )
+                .projection(Projection.builder().projectionType(ProjectionType.ALL).build())
+                .build()
+        )
+        .provisionedThroughput(
+            ProvisionedThroughput.builder()
+                .readCapacityUnits(1000L)
+                .writeCapacityUnits(1000L)
+                .build()
+        )
+        .build();
+
+    return dynamoDbClient.createTable(request);
   }
 
   public String bulkLoad(String datafile) {

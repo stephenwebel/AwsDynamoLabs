@@ -5,14 +5,9 @@ netty:
   default:
     allocator:
       max-order: 3
-aws:
-  credentials:
-    access-key-id: replaceme
-    secret-key: replaceme
-  endpoint:
-    dynamodb: http://localhost:9000
 dynamodb:
-  table-name: movies
+  region: US-EAST-1
+  endpoint: http://localhost:9000
 jackson:
   serialization:
     FAIL_ON_EMPTY_BEANS: false
