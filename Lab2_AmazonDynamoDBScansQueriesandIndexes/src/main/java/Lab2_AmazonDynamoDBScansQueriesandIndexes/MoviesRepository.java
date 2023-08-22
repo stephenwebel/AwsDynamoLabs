@@ -42,7 +42,12 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateTableResponse;
 @Singleton
 public class MoviesRepository {
 
+  private static final String tableName = "movies";
+  private static final String HK = "year";
+  private static final String SK = "title";
+
   private final DynamoDbClient dynamoDbClient;
+
 
   @Inject
   public MoviesRepository(DynamoRepository dynamoRepository) {
@@ -50,23 +55,22 @@ public class MoviesRepository {
   }
 
   public CreateTableResponse createTable() {
-    String tableName = "movies";
     CreateTableRequest request = CreateTableRequest.builder()
         .tableName(tableName)
         .keySchema(
-            KeySchemaElement.builder().attributeName("year").keyType(KeyType.HASH).build(),
-            KeySchemaElement.builder().attributeName("title").keyType(KeyType.RANGE).build()
+            KeySchemaElement.builder().attributeName(HK).keyType(KeyType.HASH).build(),
+            KeySchemaElement.builder().attributeName(SK).keyType(KeyType.RANGE).build()
         )
         .attributeDefinitions(
-            AttributeDefinition.builder().attributeName("year").attributeType(ScalarAttributeType.N).build(),
-            AttributeDefinition.builder().attributeName("title").attributeType(ScalarAttributeType.S).build(),
+            AttributeDefinition.builder().attributeName(HK).attributeType(ScalarAttributeType.N).build(),
+            AttributeDefinition.builder().attributeName(SK).attributeType(ScalarAttributeType.S).build(),
             AttributeDefinition.builder().attributeName("genre").attributeType(ScalarAttributeType.S).build()
         )
         .localSecondaryIndexes(
             LocalSecondaryIndex.builder()
                 .indexName("genre-index")
                 .keySchema(
-                    KeySchemaElement.builder().attributeName("year").keyType(KeyType.HASH).build(),
+                    KeySchemaElement.builder().attributeName(HK).keyType(KeyType.HASH).build(),
                     KeySchemaElement.builder().attributeName("genre").keyType(KeyType.RANGE).build()
                 )
                 .projection(Projection.builder().projectionType(ProjectionType.ALL).build())
@@ -148,13 +152,13 @@ public class MoviesRepository {
 
     // Use '#yr' as a placeholder for the 'year' attribute name
     Map<String, String> expressionAttributeNames = new HashMap<>();
-    expressionAttributeNames.put("#yr", "year");
+    expressionAttributeNames.put("#yr", HK);
     expressionAttributeNames.put("#gn", "genre");
 
     String filterExpression = "#yr = :yearVal AND contains(#gn, :genreVal)";
 
     ScanRequest scanRequest = ScanRequest.builder()
-        .tableName("movies")
+        .tableName(tableName)
         .filterExpression(filterExpression)
         .expressionAttributeValues(expressionAttributeValues)
         .expressionAttributeNames(expressionAttributeNames)
@@ -186,10 +190,10 @@ public class MoviesRepository {
 
     // Use '#yr' as a placeholder for the 'year' attribute name
     Map<String, String> expressionAttributeNames = new HashMap<>();
-    expressionAttributeNames.put("#yr", "year");
+    expressionAttributeNames.put("#yr", HK);
 
     QueryRequest queryRequest = QueryRequest.builder()
-        .tableName("movies")
+        .tableName(tableName)
         .indexName("genre-index")
         .keyConditionExpression("#yr = :yearVal AND genre = :genreVal")
         .expressionAttributeValues(expressionAttributeValues)
@@ -206,10 +210,10 @@ public class MoviesRepository {
 
     // Use '#yr' as a placeholder for the 'year' attribute name
     Map<String, String> expressionAttributeNames = new HashMap<>();
-    expressionAttributeNames.put("#yr", "year");
+    expressionAttributeNames.put("#yr", HK);
 
     QueryRequest queryRequest = QueryRequest.builder()
-        .tableName("movies")
+        .tableName(tableName)
         .keyConditionExpression("#yr = :yearVal")
         .filterExpression("genre = :genreVal")
         .expressionAttributeValues(expressionAttributeValues)
@@ -223,7 +227,7 @@ public class MoviesRepository {
     String newIndexName = attributeName + "-globo-index";
 
     UpdateTableRequest updateTableRequest = UpdateTableRequest.builder()
-        .tableName("movies")
+        .tableName(tableName)
         .attributeDefinitions(AttributeDefinition.builder()
                                   .attributeName(attributeName)
                                   .attributeType(attributeType)
@@ -257,7 +261,7 @@ public class MoviesRepository {
     expressionAttributeNames.put("#g", "genre");
 
     QueryRequest queryRequest = QueryRequest.builder()
-        .tableName("movies")
+        .tableName(tableName)
         .indexName("genre-globo-index")
         .keyConditionExpression("#g = :genreVal")
         .expressionAttributeValues(expressionAttributeValues)
@@ -280,8 +284,8 @@ public class MoviesRepository {
                            "FakeFakeData", "FakeGenreData", "FakeMoreData").get(ThreadLocalRandom.current().nextInt(0, 10));
 
     Map<String, AttributeValue> movie = new HashMap<>();
-    movie.put("year", AttributeValue.builder().n(String.valueOf(year)).build());
-    movie.put("title", AttributeValue.builder().s(title).build());
+    movie.put(HK, AttributeValue.builder().n(String.valueOf(year)).build());
+    movie.put(SK, AttributeValue.builder().s(title).build());
     movie.put("directors", AttributeValue.builder().ss(directors).build());
     movie.put("release_date", AttributeValue.builder().s(releaseDate).build());
     movie.put("image_url", AttributeValue.builder().s(imageUrl).build());
@@ -294,6 +298,6 @@ public class MoviesRepository {
   }
 
   private void loadMovies(List<Map<String, AttributeValue>> movies) {
-    movies.forEach(movie -> dynamoDbClient.putItem(PutItemRequest.builder().tableName("movies").item(movie).build()));
+    movies.forEach(movie -> dynamoDbClient.putItem(PutItemRequest.builder().tableName(tableName).item(movie).build()));
   }
 }
