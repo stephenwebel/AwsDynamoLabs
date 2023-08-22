@@ -1,0 +1,15 @@
+micronaut:
+  application:
+    name: Lab3_AmazonDynamoDbCapacitySizing
+  server:
+    port: 8081
+netty:
+  default:
+    allocator:
+      max-order: 3
+dynamodb:
+  region: US-EAST-1
+  endpoint: http://localhost:9000
+jackson:
+  serialization:
+    FAIL_ON_EMPTY_BEANS: false
